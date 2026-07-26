@@ -15,6 +15,9 @@
 AppId={{B7A3F2E1-9C4D-4E8A-BF12-6D5A0C3E9F84}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+; Title in "Installed apps" is just the name; the version shows in its own
+; column (from AppVersion). Without this, Inno uses "MacAccents version 1.0.0".
+UninstallDisplayName={#MyAppName}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
