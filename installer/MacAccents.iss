@@ -10,19 +10,16 @@
 #define MyAppExeName "MacAccents.exe"
 
 [Setup]
-; AppId uniquely identifies the app across versions — keep it STABLE so that
-; installing a newer version upgrades in place instead of installing twice.
 AppId={{B7A3F2E1-9C4D-4E8A-BF12-6D5A0C3E9F84}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+UninstallDisplayName={#MyAppName}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 ; Program Files needs administrator rights to write.
 PrivilegesRequired=admin
-; Matches the app's single-instance mutex: Setup detects a running instance and
-; asks the user to close it before upgrading (the .exe is locked while running).
 AppMutex=MacAccents_SingleInstance
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
