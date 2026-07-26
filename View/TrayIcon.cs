@@ -16,8 +16,13 @@ public sealed class TrayIcon : IDisposable
     private readonly NotifyIcon _notifyIcon;
     private readonly Icon _icon;
 
+    private bool _updateBalloonShown;
+
     public event Action? SettingsRequested;
     public event Action? ExitRequested;
+
+    /// <summary>Raised when the user clicks the "update available" notification.</summary>
+    public event Action? UpdateClicked;
 
     public TrayIcon()
     {
@@ -38,11 +43,29 @@ public sealed class TrayIcon : IDisposable
 
         // Double-click opens settings, matching common tray conventions.
         _notifyIcon.DoubleClick += (_, _) => SettingsRequested?.Invoke();
+        _notifyIcon.BalloonTipClicked += OnBalloonClicked;
     }
 
     public void ShowStartupHint()
         => _notifyIcon.ShowBalloonTip(3000, "MacAccents is running",
             "Hold e.g. 'a' to choose ä / á / à …", ToolTipIcon.Info);
+
+    /// <summary>Shows a notification that a newer version is available. Clicking
+    /// it raises <see cref="UpdateClicked"/>.</summary>
+    public void ShowUpdateAvailable(Version version)
+    {
+        _updateBalloonShown = true;
+        _notifyIcon.ShowBalloonTip(5000, "Update available",
+            $"MacAccents {version} is available. Click to download.", ToolTipIcon.Info);
+    }
+
+    private void OnBalloonClicked(object? sender, EventArgs e)
+    {
+        // Only the update balloon is actionable; ignore clicks on other balloons.
+        if (!_updateBalloonShown) return;
+        _updateBalloonShown = false;
+        UpdateClicked?.Invoke();
+    }
 
     private static Icon LoadIcon()
     {

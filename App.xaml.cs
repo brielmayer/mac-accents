@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 using MacAccents.Accents;
@@ -25,7 +27,9 @@ public partial class App : System.Windows.Application
     private KeyboardHook _hook = null!;
     private AccentController _controller = null!;
     private TrayIcon _tray = null!;
+    private IUpdateChecker _updateChecker = null!;
     private SettingsWindow? _settingsWindow;
+    private string? _pendingUpdateUrl;
 
     private void OnStartup(object sender, StartupEventArgs e)
     {
@@ -60,7 +64,31 @@ public partial class App : System.Windows.Application
         _tray = new TrayIcon();
         _tray.SettingsRequested += ShowSettings;
         _tray.ExitRequested += Shutdown;
+        _tray.UpdateClicked += OpenDownloadPage;
         _tray.ShowStartupHint();
+
+        _updateChecker = new GitHubUpdateChecker();
+        _ = CheckForUpdatesAsync();
+    }
+
+    private static Version CurrentVersion
+        => Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
+
+    private async Task CheckForUpdatesAsync()
+    {
+        // Runs on startup; the async continuation resumes on the UI thread.
+        UpdateCheckResult result = await _updateChecker.CheckAsync(CurrentVersion);
+        if (result.Status != UpdateCheckStatus.UpdateAvailable)
+            return;
+
+        _pendingUpdateUrl = result.ReleaseUrl;
+        _tray.ShowUpdateAvailable(result.Version!);
+    }
+
+    private void OpenDownloadPage()
+    {
+        if (!string.IsNullOrEmpty(_pendingUpdateUrl))
+            Process.Start(new ProcessStartInfo(_pendingUpdateUrl) { UseShellExecute = true });
     }
 
     private bool TryInstallHook()
@@ -89,7 +117,7 @@ public partial class App : System.Windows.Application
         }
 
         _settingsWindow = new SettingsWindow(
-            new SettingsViewModel(_options, _autostart, _settingsStore));
+            new SettingsViewModel(_options, _autostart, _settingsStore, _updateChecker, CurrentVersion));
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         _settingsWindow.Show();
     }

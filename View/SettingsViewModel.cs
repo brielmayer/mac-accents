@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using MacAccents.Services;
 
@@ -14,15 +15,26 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly AppOptions _options;
     private readonly IAutostartService _autostart;
     private readonly ISettingsStore _store;
+    private readonly IUpdateChecker _updateChecker;
+    private readonly Version _currentVersion;
+    private string? _updateUrl;
 
-    public SettingsViewModel(AppOptions options, IAutostartService autostart, ISettingsStore store)
+    public SettingsViewModel(
+        AppOptions options,
+        IAutostartService autostart,
+        ISettingsStore store,
+        IUpdateChecker updateChecker,
+        Version currentVersion)
     {
         _options = options;
         _autostart = autostart;
         _store = store;
+        _updateChecker = updateChecker;
+        _currentVersion = currentVersion;
 
         _holdDelayMs = options.HoldDelay.TotalMilliseconds;
         _launchAtStartup = autostart.IsEnabled;
+        VersionText = $"Version {currentVersion.ToString(3)}";
     }
 
     public double MinHoldDelayMs => AppOptions.MinHoldDelayMs;
@@ -46,6 +58,70 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         get => _launchAtStartup;
         set => SetField(ref _launchAtStartup, value);
+    }
+
+    // --- Updates ---
+
+    public string VersionText { get; }
+
+    private string _updateStatus = "Checking for updates…";
+    public string UpdateStatus
+    {
+        get => _updateStatus;
+        private set => SetField(ref _updateStatus, value);
+    }
+
+    private bool _isChecking;
+    public bool IsChecking
+    {
+        get => _isChecking;
+        private set
+        {
+            if (SetField(ref _isChecking, value))
+                OnPropertyChanged(nameof(CanCheck));
+        }
+    }
+
+    public bool CanCheck => !_isChecking;
+
+    private bool _updateAvailable;
+    public bool UpdateAvailable
+    {
+        get => _updateAvailable;
+        private set => SetField(ref _updateAvailable, value);
+    }
+
+    /// <summary>Queries GitHub for a newer release and updates the status.</summary>
+    public async Task CheckForUpdatesAsync()
+    {
+        IsChecking = true;
+        UpdateAvailable = false;
+        UpdateStatus = "Checking for updates…";
+
+        UpdateCheckResult result = await _updateChecker.CheckAsync(_currentVersion);
+        IsChecking = false;
+
+        switch (result.Status)
+        {
+            case UpdateCheckStatus.UpdateAvailable:
+                _updateUrl = result.ReleaseUrl;
+                UpdateAvailable = true;
+                UpdateStatus = $"Version {result.Version} is available.";
+                break;
+            case UpdateCheckStatus.UpToDate:
+                UpdateStatus = "You’re on the latest version.";
+                break;
+            default:
+                UpdateStatus = "Couldn’t check for updates.";
+                break;
+        }
+    }
+
+    /// <summary>Opens the release page for the available update.</summary>
+    public void DownloadUpdate()
+    {
+        if (!string.IsNullOrEmpty(_updateUrl))
+            Process.Start(new ProcessStartInfo(_updateUrl) { UseShellExecute = true });
     }
 
     /// <summary>Commits the edited values to options, autostart and disk.</summary>

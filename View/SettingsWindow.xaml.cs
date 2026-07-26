@@ -13,7 +13,16 @@ public partial class SettingsWindow : Window
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
+
+        // Check for updates as soon as the dialog opens.
+        Loaded += async (_, _) => await _viewModel.CheckForUpdatesAsync();
     }
+
+    private async void OnCheckForUpdates(object sender, RoutedEventArgs e)
+        => await _viewModel.CheckForUpdatesAsync();
+
+    private void OnDownloadUpdate(object sender, RoutedEventArgs e)
+        => _viewModel.DownloadUpdate();
 
     private void OnSave(object sender, RoutedEventArgs e)
     {
