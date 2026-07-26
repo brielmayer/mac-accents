@@ -186,11 +186,15 @@
         </Border>
 
         <!-- Footer -->
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
-            <Button Content="Cancel" Style="{StaticResource SecondaryButton}" MinWidth="88"
-                    IsCancel="True" Click="OnCancel" Margin="0,0,8,0"/>
-            <Button Content="Save" Style="{StaticResource PrimaryButton}" MinWidth="88"
-                    IsDefault="True" Click="OnSave"/>
-        </StackPanel>
+        <DockPanel Margin="0,4,0,0">
+            <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center"
+                       Text="{Binding CopyrightText}" FontSize="11" Foreground="#8A8A8E"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" Style="{StaticResource SecondaryButton}" MinWidth="88"
+                        IsCancel="True" Click="OnCancel" Margin="0,0,8,0"/>
+                <Button Content="Save" Style="{StaticResource PrimaryButton}" MinWidth="88"
+                        IsDefault="True" Click="OnSave"/>
+            </StackPanel>
+        </DockPanel>
     </StackPanel>
 </Window>

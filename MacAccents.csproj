@@ -16,6 +16,7 @@
     <Version>1.0.0</Version>
     <Company>Brielmayer Consulting GmbH</Company>
     <Product>MacAccents</Product>
+    <Copyright>© 2026 Brielmayer Consulting GmbH</Copyright>
 
     <!-- Treat .editorconfig code-style rules as build diagnostics
          (the `spotlessCheck` equivalent). Analyzer level stays at the SDK

@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using MacAccents.Services;
 
@@ -35,7 +36,11 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _holdDelayMs = options.HoldDelay.TotalMilliseconds;
         _launchAtStartup = autostart.IsEnabled;
         VersionText = $"Version {currentVersion.ToString(3)}";
+        CopyrightText = Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright ?? string.Empty;
     }
+
+    public string CopyrightText { get; }
 
     public double MinHoldDelayMs => AppOptions.MinHoldDelayMs;
     public double MaxHoldDelayMs => AppOptions.MaxHoldDelayMs;
@@ -91,14 +96,20 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         private set => SetField(ref _updateAvailable, value);
     }
 
-    /// <summary>Queries GitHub for a newer release and updates the status.</summary>
-    public async Task CheckForUpdatesAsync()
+    /// <summary>Queries GitHub for a newer release and updates the status.
+    /// <paramref name="minimumDuration"/> keeps the "checking" state visible for
+    /// at least that long, so a manual check feels responsive even when the
+    /// network answers instantly.</summary>
+    public async Task CheckForUpdatesAsync(TimeSpan minimumDuration = default)
     {
         IsChecking = true;
         UpdateAvailable = false;
         UpdateStatus = "Checking for updates…";
 
-        UpdateCheckResult result = await _updateChecker.CheckAsync(_currentVersion);
+        Task<UpdateCheckResult> check = _updateChecker.CheckAsync(_currentVersion);
+        await Task.WhenAll(check, Task.Delay(minimumDuration));
+        UpdateCheckResult result = await check;
+
         IsChecking = false;
 
         switch (result.Status)
