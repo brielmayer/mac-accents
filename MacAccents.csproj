@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <AssemblyName>MacAccents</AssemblyName>
+    <RootNamespace>MacAccents</RootNamespace>
+
+    <!-- Default version for local builds; CI overrides via -p:Version=<tag>. -->
+    <Version>1.0.0</Version>
+    <Company>Brielmayer Consulting GmbH</Company>
+    <Product>MacAccents</Product>
+
+    <!-- Treat .editorconfig code-style rules as build diagnostics
+         (the `spotlessCheck` equivalent). Analyzer level stays at the SDK
+         default — no cranked-up ruleset to maintain. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Embedded so the tray and windows can load it at runtime via pack URI. -->
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
+
+</Project>

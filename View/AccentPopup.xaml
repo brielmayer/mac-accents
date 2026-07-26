@@ -1,0 +1,54 @@
+<Window x:Class="MacAccents.View.AccentPopup"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        Focusable="False"
+        SizeToContent="WidthAndHeight"
+        ResizeMode="NoResize">
+
+    <Border CornerRadius="10" Padding="6"
+            Background="#F2F2F2" BorderBrush="#B0B0B0" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="12" ShadowDepth="3" Opacity="0.35" Color="Black"/>
+        </Border.Effect>
+
+        <ItemsControl x:Name="OptionsHost">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border x:Name="Cell"
+                            CornerRadius="6" Margin="2" Padding="6,4"
+                            Background="Transparent"
+                            MouseLeftButtonUp="OnCellClicked"
+                            MouseEnter="OnCellHovered">
+                        <StackPanel>
+                            <TextBlock x:Name="Glyph" Text="{Binding Display}"
+                                       FontSize="26" Foreground="Black"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding Number}"
+                                       FontSize="11" Foreground="Gray"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
+                            <Setter TargetName="Cell" Property="Background" Value="#0A84FF"/>
+                            <Setter TargetName="Glyph" Property="Foreground" Value="White"/>
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Border>
+</Window>

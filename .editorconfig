@@ -1,0 +1,22 @@
+# Minimal EditorConfig — relies on .NET SDK defaults for almost everything.
+# `dotnet format` applies it; `dotnet format --verify-no-changes` gates it.
+# Only whitespace basics plus two deliberate house choices are pinned here.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.{json,xml,csproj,manifest}]
+indent_size = 2
+
+[*.{cs,xaml}]
+indent_size = 4
+
+# The two conventions we care about (everything else = SDK default):
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
