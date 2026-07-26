@@ -7,25 +7,27 @@ namespace MacAccents.Accents;
 /// </summary>
 public sealed class AccentProvider : IAccentProvider
 {
-    // Lowercase definitions. Everything else is derived from these.
     private static readonly IReadOnlyDictionary<char, string> Definitions =
         new Dictionary<char, string>
         {
-            ['a'] = "àáâäæãåā",
-            ['e'] = "èéêëēėę",
-            ['i'] = "îïíīįì",
-            ['o'] = "ôöòóœøōõ",
-            ['u'] = "ûüùúū",
-            ['n'] = "ñń",
-            ['c'] = "çćč",
-            ['s'] = "ßśš",
-            ['y'] = "ÿý",
-            ['z'] = "žźż",
-            ['l'] = "ł",
-            ['g'] = "ğ",
+            ['a'] = "àáâäǎæãåā",
+            ['e'] = "èéêëěẽēėę",
+            ['i'] = "ìíîïǐĩīıį",
+            ['o'] = "òóôöǒœøõō",
+            ['u'] = "ùúûüǔũūűů",
+            ['c'] = "çćčċ",
+            ['d'] = "ďð",
+            ['g'] = "ğġ",
+            ['h'] = "ħ",
+            ['k'] = "ķ",
+            ['l'] = "łļľ",
+            ['n'] = "ñńņň",
             ['r'] = "ř",
-            ['t'] = "ťþ",
-            ['d'] = "ðď",
+            ['s'] = "ßşșśš",
+            ['t'] = "ţťþ",
+            ['w'] = "ŵ",
+            ['y'] = "ýŷÿ",
+            ['z'] = "źžż",
         };
 
     private readonly IReadOnlyDictionary<char, IReadOnlyList<char>> _variants;
@@ -50,10 +52,10 @@ public sealed class AccentProvider : IAccentProvider
             result[baseChar] = variants.ToCharArray();
 
             // Derive the uppercase counterpart. Skip variants that have no
-            // distinct uppercase form (e.g. 'ß').
+            // distinct uppercase form (e.g. 'ß'), matching macOS (S -> Ś Š).
             var upperVariants = variants
                 .Select(char.ToUpperInvariant)
-                .Where(c => !char.IsWhiteSpace(c))
+                .Where(char.IsUpper)
                 .ToArray();
 
             char upperBase = char.ToUpperInvariant(baseChar);
