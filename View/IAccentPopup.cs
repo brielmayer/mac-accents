@@ -1,4 +1,4 @@
-using Point = System.Windows.Point;
+using MacAccents.Interop;
 
 namespace MacAccents.View;
 
@@ -11,8 +11,8 @@ public interface IAccentPopup
     /// <summary>Raised when the user picks a variant (keyboard or mouse).</summary>
     event Action<char>? VariantChosen;
 
-    /// <summary>Shows the popup near the given screen anchor (physical pixels).</summary>
-    void Show(Point screenAnchor, IReadOnlyList<char> variants);
+    /// <summary>Shows the popup at the given caret anchor (physical pixels).</summary>
+    void Show(CaretAnchor anchor, IReadOnlyList<char> variants);
 
     /// <summary>Moves the highlight by <paramref name="delta"/> positions.</summary>
     void MoveHighlight(int delta);

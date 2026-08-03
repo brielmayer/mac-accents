@@ -11,7 +11,9 @@
         SizeToContent="WidthAndHeight"
         ResizeMode="NoResize">
 
-    <Border CornerRadius="10" Padding="6"
+    <Border x:Name="PopupSurface"
+            HorizontalAlignment="Left" VerticalAlignment="Top"
+            CornerRadius="10" Padding="6"
             Background="#F2F2F2" BorderBrush="#B0B0B0" BorderThickness="1">
         <Border.Effect>
             <DropShadowEffect BlurRadius="12" ShadowDepth="3" Opacity="0.35" Color="Black"/>
@@ -35,7 +37,7 @@
                             <TextBlock x:Name="Glyph" Text="{Binding Display}"
                                        FontSize="26" Foreground="Black"
                                        HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding Number}"
+                            <TextBlock x:Name="Number" Text="{Binding Number}"
                                        FontSize="11" Foreground="Gray"
                                        HorizontalAlignment="Center"/>
                         </StackPanel>
@@ -43,8 +45,9 @@
 
                     <DataTemplate.Triggers>
                         <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
-                            <Setter TargetName="Cell" Property="Background" Value="#0A84FF"/>
+                            <Setter TargetName="Cell" Property="Background" Value="#0A6DE0"/>
                             <Setter TargetName="Glyph" Property="Foreground" Value="White"/>
+                            <Setter TargetName="Number" Property="Foreground" Value="White"/>
                         </DataTrigger>
                     </DataTemplate.Triggers>
                 </DataTemplate>

@@ -16,8 +16,9 @@ namespace MacAccents;
 ///   PopupOpen -- selection --------> Idle        (base char replaced by variant)
 ///
 /// Key repeat of the held key is swallowed throughout, so holding never yields
-/// "aaaa". All members run on the UI thread (see <see cref="KeyboardHook"/>),
-/// so no synchronization is required.
+/// "aaaa". All members run on the UI thread (see <see cref="KeyboardHook"/>), so
+/// no synchronization is required, including the one await in
+/// <see cref="OnHoldElapsed"/>, whose continuation comes back to that same thread.
 /// </summary>
 public sealed class AccentController : IDisposable
 {
@@ -43,6 +44,11 @@ public sealed class AccentController : IDisposable
     private readonly DispatcherTimer _holdTimer;
 
     private State _state = State.Idle;
+
+    // Bumped whenever a hold ends, so an in-flight caret lookup from that hold
+    // cannot open a popup once it finally answers.
+    private int _holdGeneration;
+
     private int _activeKey;
     private char _activeChar;
     private IReadOnlyList<char> _activeVariants = Array.Empty<char>();
@@ -198,14 +204,24 @@ public sealed class AccentController : IDisposable
         return true;
     }
 
-    private void OnHoldElapsed()
+    private async void OnHoldElapsed()
     {
         _holdTimer.Stop();
         if (_state != State.Holding) return;
 
+        int generation = _holdGeneration;
+        IReadOnlyList<char> variants = _activeVariants;
+
+        CaretAnchor anchor = await _caret.GetAnchorAsync();
+
+        // The hold may have ended while the lookup was in flight. Comparing state
+        // alone is not enough: a hold started in the meantime also sits in
+        // Holding and would otherwise be shown the previous key's variants.
+        if (generation != _holdGeneration || _state != State.Holding) return;
+
         _popup = _popupFactory();
         _popup.VariantChosen += OnVariantChosen;
-        _popup.Show(_caret.GetAnchorPoint(), _activeVariants);
+        _popup.Show(anchor, variants);
 
         _state = State.PopupOpen;
     }
@@ -240,6 +256,7 @@ public sealed class AccentController : IDisposable
     private void ReturnToIdle()
     {
         _holdTimer.Stop();
+        _holdGeneration++;
         _state = State.Idle;
         _activeKey = 0;
         _activeChar = '\0';

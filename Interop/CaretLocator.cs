@@ -5,18 +5,61 @@ using Point = System.Windows.Point;
 namespace MacAccents.Interop;
 
 /// <summary>
-/// Determines the screen position of the text caret in the foreground window.
-/// Falls back to the mouse cursor when no caret is available — not every
-/// application reports its caret position to Windows.
+/// Determines the screen position of the text caret, trying four strategies in
+/// order of cost and reliability:
+///
+///   1. GUITHREADINFO.rcCaret: the Win32 caret. Cheap and exact, but only
+///      classic applications (Notepad, Win32 edit controls) report one.
+///   2. UI Automation TextPattern: reaches the caret in applications that draw
+///      it themselves, such as Chromium/Electron, WPF, WinUI, Office and Qt.
+///   3. The focused element's bounding rectangle: no caret, but at least the
+///      right control.
+///   4. The mouse cursor: last resort.
+///
+/// Strategies 2 and 3 are cross-process COM calls of unpredictable duration, so
+/// they run on the thread pool and the caller awaits them rather than blocking:
+/// the calling thread is the one serving the low-level keyboard hook, and
+/// stalling it stalls typing system-wide. Resolution happens only when a popup is
+/// actually about to open, never speculatively per keystroke.
 /// </summary>
 public sealed class CaretLocator : ICaretLocator
 {
-    public Point GetAnchorPoint()
-        => TryGetCaret(out var caret) ? caret : GetCursor();
+    /// <summary>How long a UI Automation lookup may take before it is abandoned.
+    /// Kept short: a popup in the wrong place beats a popup that arrives late.
+    /// The abandoned lookup finishes on the thread pool and its result is dropped.
+    /// </summary>
+    private static readonly TimeSpan ResolveTimeout = TimeSpan.FromMilliseconds(50);
 
-    private static bool TryGetCaret(out Point point)
+    public async Task<CaretAnchor> GetAnchorAsync()
     {
-        point = default;
+        // The Win32 caret is cheap and needs no thread hop, so where it works the
+        // popup still opens within the same dispatcher turn.
+        if (TryGetWin32Caret(out CaretAnchor caret))
+            return caret;
+
+        return await ResolveViaUiaAsync().ConfigureAwait(true)
+            ?? CaretAnchor.FromMouse(GetCursor());
+    }
+
+    private static async Task<CaretAnchor?> ResolveViaUiaAsync()
+    {
+        Task<CaretAnchor?> lookup = Task.Run(UiaCaretLocator.TryResolve);
+
+        if (await Task.WhenAny(lookup, Task.Delay(ResolveTimeout)).ConfigureAwait(true) != lookup)
+            return null;
+
+        if (lookup.IsCompletedSuccessfully)
+            return lookup.Result;
+
+        // Observe the failure so it cannot resurface as an unobserved exception,
+        // then fall through to the next strategy.
+        _ = lookup.Exception;
+        return null;
+    }
+
+    private static bool TryGetWin32Caret(out CaretAnchor anchor)
+    {
+        anchor = default;
 
         IntPtr foreground = GetForegroundWindow();
         if (foreground == IntPtr.Zero) return false;
@@ -38,7 +81,10 @@ public sealed class CaretLocator : ICaretLocator
         if (!ClientToScreen(info.hwndCaret, ref pt))
             return false;
 
-        point = new Point(pt.X, pt.Y);
+        anchor = new CaretAnchor(
+            new Point(pt.X, pt.Y),
+            Math.Max(0, caret.Bottom - caret.Top),
+            AnchorSource.WindowsCaret);
         return true;
     }
 

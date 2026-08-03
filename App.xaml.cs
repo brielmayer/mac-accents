@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Reflection;
-using System.Threading;
 using System.Windows;
 using MacAccents.Accents;
 using MacAccents.Input;
@@ -60,6 +59,12 @@ public partial class App : System.Windows.Application
 
         if (!TryInstallHook())
             return;
+
+        // Chromium-based applications (Chrome, Edge, Electron) only build their
+        // accessibility tree once a UI Automation client shows up, and their first
+        // answer to a new client is typically empty. Knocking once at startup means
+        // the first accent popup already lands on the caret instead of the mouse.
+        _ = Task.Run(UiaCaretLocator.Warmup);
 
         _tray = new TrayIcon();
         _tray.SettingsRequested += ShowSettings;

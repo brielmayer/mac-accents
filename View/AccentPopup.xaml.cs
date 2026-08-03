@@ -2,7 +2,10 @@ using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
+using MacAccents.Interop;
 using Point = System.Windows.Point;
+using Size = System.Windows.Size;
 
 namespace MacAccents.View;
 
@@ -17,8 +20,6 @@ public partial class AccentPopup : Window, IAccentPopup
     private const int GwlExStyle = -20;
     private const int WsExNoActivate = 0x0800_0000;
     private const int WsExToolWindow = 0x0000_0080;
-
-    private const double VerticalGap = 4;
 
     [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
     [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int newLong);
@@ -44,7 +45,7 @@ public partial class AccentPopup : Window, IAccentPopup
         SetWindowLong(handle, GwlExStyle, style | WsExNoActivate | WsExToolWindow);
     }
 
-    public void Show(Point screenAnchor, IReadOnlyList<char> variants)
+    public void Show(CaretAnchor anchor, IReadOnlyList<char> variants)
     {
         PopulateOptions(variants);
 
@@ -52,7 +53,7 @@ public partial class AccentPopup : Window, IAccentPopup
         Show();
         UpdateLayout();
 
-        PositionAbove(screenAnchor);
+        Place(anchor);
     }
 
     private void PopulateOptions(IReadOnlyList<char> variants)
@@ -65,25 +66,58 @@ public partial class AccentPopup : Window, IAccentPopup
         ApplyHighlight();
     }
 
-    /// <summary>Places the popup just above the anchor, flipping below if it
-    /// would leave the screen.</summary>
-    private void PositionAbove(Point screenAnchorPixels)
+    /// <summary>Converts the anchor into this window's units and hands the geometry
+    /// to <see cref="PopupPlacement"/>.
+    ///
+    /// Sizes come from <c>PopupSurface</c> rather than the window. Windows enforces
+    /// a minimum width on every top-level window, so the window can be wider than
+    /// what it shows, and clamping against that phantom width would push the popup
+    /// off the caret near a screen edge.
+    ///
+    /// Known limitation: the conversion uses the DPI of the monitor this window
+    /// currently sits on, which is where it was created, not necessarily the
+    /// monitor the caret is on. On a mixed-DPI setup the popup can therefore land
+    /// slightly off. Resolving that needs the anchor monitor's own DPI via
+    /// GetDpiForMonitor.</summary>
+    private void Place(CaretAnchor anchor)
     {
-        Point anchor = DeviceToLogical(screenAnchorPixels);
+        Point position = PopupPlacement.Compute(
+            caret: DeviceToLogical(anchor.BottomLeft),
+            lineHeight: ScaleToLogical(anchor.LineHeight),
+            anchoredToMouse: anchor.Source == AnchorSource.MousePointer,
+            popup: new Size(PopupSurface.ActualWidth, PopupSurface.ActualHeight),
+            workArea: DeviceToLogical(WorkAreaAround(anchor.BottomLeft)));
 
-        Left = anchor.X;
-        double above = anchor.Y - ActualHeight - VerticalGap;
-        Top = above >= 0 ? above : anchor.Y + VerticalGap * 6;
+        Left = position.X;
+        Top = position.Y;
+    }
+
+    /// <summary>Work area (physical pixels) of the monitor containing the anchor.
+    /// Floors rather than truncates, so a monitor left of or above the primary one,
+    /// where coordinates are negative, probes the right side of the boundary.</summary>
+    private static Rect WorkAreaAround(Point screenPixels)
+    {
+        var probe = new System.Drawing.Point(
+            (int)Math.Floor(screenPixels.X), (int)Math.Floor(screenPixels.Y));
+        System.Drawing.Rectangle work = System.Windows.Forms.Screen.FromPoint(probe).WorkingArea;
+        return new Rect(work.X, work.Y, work.Width, work.Height);
     }
 
     /// <summary>Converts physical screen pixels to WPF device-independent units.</summary>
-    private Point DeviceToLogical(Point pixels)
+    private Point DeviceToLogical(Point pixels) => TransformFromDevice().Transform(pixels);
+
+    private Rect DeviceToLogical(Rect pixels)
+    {
+        Matrix transform = TransformFromDevice();
+        return new Rect(transform.Transform(pixels.TopLeft), transform.Transform(pixels.BottomRight));
+    }
+
+    private double ScaleToLogical(double pixels) => pixels * TransformFromDevice().M22;
+
+    private Matrix TransformFromDevice()
     {
         var source = PresentationSource.FromVisual(this);
-        if (source?.CompositionTarget is null)
-            return pixels;
-
-        return source.CompositionTarget.TransformFromDevice.Transform(pixels);
+        return source?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
     }
 
     // --- IAccentPopup control surface (called by the controller) ---

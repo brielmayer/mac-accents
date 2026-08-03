@@ -22,6 +22,12 @@
          (the `spotlessCheck` equivalent). Analyzer level stays at the SDK
          default — no cranked-up ruleset to maintain. -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- WFO0003 wants DPI awareness set through the WinForms 'ApplicationHighDpiMode'
+         property. That only takes effect via ApplicationConfiguration.Initialize(),
+         which a WPF-first app never calls; WinForms is here for the tray icon alone.
+         The manifest is the correct place for us. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

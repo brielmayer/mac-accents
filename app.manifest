@@ -12,4 +12,17 @@
     </security>
   </trustInfo>
 
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+      <!-- The popup is placed by raw screen coordinates taken from Win32 and UI
+           Automation, so the process must see real physical pixels rather than
+           the coordinates Windows virtualizes for DPI-unaware apps. Without this
+           the popup drifts on scaled or mixed-DPI displays.
+           PerMonitorV2 is handled natively by WPF; layout is all DIP-based, so
+           windows keep their size and merely render sharper. -->
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
+    </windowsSettings>
+  </application>
+
 </assembly>
