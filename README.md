@@ -63,6 +63,8 @@ To quit, right-click the tray icon and choose **Exit**.
   work fine.
 - The popup appears at your text cursor. If an app doesn’t report where that is,
   it appears near your mouse pointer instead.
+- In **full-screen apps** — games, a video, a presentation — MacAccents stays out
+  of the way: no popup, and holding a key keeps repeating as the app expects.
 
 ## Build from source
 

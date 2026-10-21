@@ -53,6 +53,7 @@ public partial class App : System.Windows.Application
             new AccentProvider(),
             new InputSimulator(),
             new CaretLocator(),
+            new FullscreenDetector(),
             popupFactory: () => new AccentPopup(),
             _options,
             Dispatcher);

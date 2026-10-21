@@ -167,4 +167,61 @@ internal static class NativeMethods
     public static extern bool GetCursorPos(out POINT lpPoint);
 
     #endregion
+
+    #region Fullscreen detection
+
+    /// <summary>Shell answer to "may I show a notification right now?" — the
+    /// documented way to learn that a full-screen Direct3D application owns the
+    /// screen.</summary>
+    public enum QueryUserNotificationState
+    {
+        NotPresent = 1,
+        Busy = 2,
+        RunningD3dFullScreen = 3,
+        PresentationMode = 4,
+        AcceptsNotifications = 5,
+        QuietTime = 6,
+        App = 7,
+    }
+
+    public const int GWL_STYLE = -16;
+
+    public const long WS_CAPTION = 0x00C00000;
+
+    public const uint MONITOR_DEFAULTTONEAREST = 2;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MONITORINFO
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+    }
+
+    /// <summary>Returns S_OK (0) on success.</summary>
+    [DllImport("shell32.dll")]
+    public static extern int SHQueryUserNotificationState(out QueryUserNotificationState pquns);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint dwFlags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW", SetLastError = true)]
+    public static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetShellWindow();
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetDesktopWindow();
+
+    #endregion
 }

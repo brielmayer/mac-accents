@@ -19,6 +19,9 @@ namespace MacAccents;
 /// "aaaa". All members run on the UI thread (see <see cref="KeyboardHook"/>), so
 /// no synchronization is required, including the one await in
 /// <see cref="OnHoldElapsed"/>, whose continuation comes back to that same thread.
+///
+/// While a full-screen application is in front (a game, a video, a presentation)
+/// no hold is tracked at all, so its key repeat arrives unaltered.
 /// </summary>
 public sealed class AccentController : IDisposable
 {
@@ -39,6 +42,7 @@ public sealed class AccentController : IDisposable
     private readonly IAccentProvider _accents;
     private readonly IInputSimulator _input;
     private readonly ICaretLocator _caret;
+    private readonly IFullscreenDetector _fullscreen;
     private readonly Func<IAccentPopup> _popupFactory;
     private readonly AppOptions _options;
     private readonly DispatcherTimer _holdTimer;
@@ -64,6 +68,7 @@ public sealed class AccentController : IDisposable
         IAccentProvider accents,
         IInputSimulator input,
         ICaretLocator caret,
+        IFullscreenDetector fullscreen,
         Func<IAccentPopup> popupFactory,
         AppOptions options,
         Dispatcher dispatcher)
@@ -73,6 +78,7 @@ public sealed class AccentController : IDisposable
         _accents = accents;
         _input = input;
         _caret = caret;
+        _fullscreen = fullscreen;
         _popupFactory = popupFactory;
         _options = options;
 
@@ -183,9 +189,16 @@ public sealed class AccentController : IDisposable
     }
 
     /// <summary>Starts hold tracking if the key maps to a character with
-    /// accents. Returns false if it does not.</summary>
+    /// accents. Returns false if it does not, or if a full-screen application is
+    /// in front.</summary>
     private bool TryBeginHold(int virtualKey)
     {
+        // Games read the keyboard themselves and rely on auto-repeat, which
+        // tracking a hold would swallow. Declining here — before any state is
+        // entered — leaves the key stream untouched.
+        if (_fullscreen.IsFullscreenAppActive())
+            return false;
+
         char? resolved = _resolver.Resolve(virtualKey);
         if (resolved is not char c)
             return false;
